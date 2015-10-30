@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.linalg import eigh
+from numpy.linalg import eigh, inv
 from numpy import cov
 
 def readData():
@@ -64,7 +64,7 @@ def rescale(conformantdata, df):
     scaledData = map( lambda v : extract(v), conformantdata)
     return zip(i,scaledData)
 
-    """Compute the covariance matrix for a given rdd.
+    """Compute the covariance matrix for a given dataset.
 
     """
 def estimateCovariance( data ):
@@ -83,31 +83,38 @@ def estimateCovariance( data ):
 def pca(data, k=2):
     
     d = estimateCovariance(  data )
-    print type(d)
     
     eigVals, eigVecs = eigh(d)
+
+    validate( eigVals, eigVecs )
     inds = np.argsort(eigVals)[::-1]
-    print eigVecs    
     topComponent = eigVecs[:,inds[:k]]
-    print '\ntopComponent: \n{0}'.format(topComponent)
+    print '\nTop Component: \n{0}'.format(topComponent)
     
     correlatedDataScores = map(lambda x : np.dot( x ,topComponent), data )
-    print ('\ntestScores : \n{0}'
+    print ('\nScores : \n{0}'
        .format('\n'.join(map(str, correlatedDataScores))))
-    print '\neigenvaluesTest: \n{0}'.format(eigVals[inds])
+    print '\n eigenvalues: \n{0}'.format(eigVals[inds])
     return topComponent,correlatedDataScores,eigVals[inds]
 
-         
+
+    """Mutiply the eigen vector, its inverse and a diagonal matrix of eign values
+
+    """
+def  validate( eigVals, eigVecs ):
+    print eigVecs    
+    m = np.matrix( np.diag( eigVals ) )
+    print '\n Validation: \n{0}'.format( np.dot( np.dot( eigVecs, inv( eigVecs ) ), m ) )
+        
 if __name__=="__main__":
     df = readData()
     conformantdata = parse( df )
     scaledData = rescale(conformantdata, df)
     example = filter(lambda (k, v): np.std(v) > 0.1, scaledData )
-#     plot( example[ 0 ][ 1 ], df )
     b = map(lambda (k, v): v , scaledData )
     b = np.asarray(b)
     
 
     componentsScaled, scaledScores, eigenvaluesScaled = pca( b )
-#     componentsScaled, scaledScores, eigenvaluesScaled = pca( pcaTestData )
-        
+#     pcatestdata = [np.arange(x, x + 4) for x in np.arange(0, 20, 4)]   
+#     componentsScaled, scaledScores, eigenvaluesScaled = pca( pcatestdata )
