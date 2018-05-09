@@ -13,27 +13,33 @@ X = tf.placeholder(tf.float32, shape=[None, 299, 299, 1], name='X')
 Z = tf.placeholder(dtype=tf.float32,
                               shape=(None, 100),
                               name='Z')
+keep_prob = tf.placeholder(dtype=tf.float32, name='keep_prob')
+keep_prob_value = 0.6
 
 
-def generator(z,reuse=False):
+def generator(z,reuse=False, keep_prob=keep_prob_value):
     with tf.variable_scope('generator',reuse=reuse):
         linear = tf.layers.dense(z, 1024 * 8 * 8)
         conv = tf.reshape(linear, (-1, 64, 64, 32))
         out = tf.layers.conv2d_transpose(conv, 64,kernel_size=4,strides=2, padding='SAME')
+        out = tf.layers.dropout(out, keep_prob)
         out = tf.nn.relu(out)
         out = tf.layers.conv2d_transpose(out, 1,kernel_size=4,strides=2, padding='SAME')
+        out = tf.layers.dropout(out, keep_prob)
         print( out.get_shape())
         out = tf.nn.relu(out)
         tf.nn.tanh(out)
         return out
 
 
-def discriminator(x,reuse=False):
+def discriminator(x,reuse=False, keep_prob=keep_prob_value):
     with tf.variable_scope('discriminator',reuse=reuse):
         out = tf.layers.conv2d(x, filters=32, kernel_size=[5, 5], padding='SAME')
+        out = tf.layers.dropout(out, keep_prob)
         out = tf.nn.relu(out)
         out = tf.layers.max_pooling2d(out, pool_size=[2, 2],padding='SAME', strides=2)
         out = tf.layers.conv2d(out, filters=64, kernel_size=[5, 5], padding='SAME')
+        out = tf.layers.dropout(out, keep_prob)
         out = tf.nn.relu(out)
         out = tf.layers.max_pooling2d(out, pool_size=[2, 2],padding='SAME', strides=2)
         out = tf.layers.dense(out, units=256, activation=tf.nn.relu)
@@ -122,7 +128,6 @@ def train():
     batch = tf.train.batch([input],
                            batch_size=20)
 
-
     init = (tf.global_variables_initializer(), tf.local_variables_initializer())
     with tf.Session() as sess:
         sess.run(init)
@@ -134,8 +139,8 @@ def train():
 
         for it in range(500):
             _, X_batch =  sess.run([input,batch])
-            summary,_ = sess.run([merge,D_optimizer], feed_dict={Z : samplefromuniformdistribution(20,100), X: X_batch})
-            summary,_ = sess.run([merge,G_optimizer],feed_dict={ Z : samplefromuniformdistribution(20,100), X: X_batch})
+            summary,_ = sess.run([merge,D_optimizer], feed_dict={Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value})
+            summary,_ = sess.run([merge,G_optimizer],feed_dict={ Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value})
 
             train_writer.add_summary(summary, it)
             train_writer.flush()
