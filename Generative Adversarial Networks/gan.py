@@ -19,8 +19,8 @@ keep_prob_value = 0.6
 
 def generator(z,reuse=False, keep_prob=keep_prob_value):
     with tf.variable_scope('generator',reuse=reuse):
-        linear = tf.layers.dense(z, 1024 * 8 * 8)
-        conv = tf.reshape(linear, (-1, 64, 64, 32))
+        linear = tf.layers.dense(z, 1024 * 16 * 16)
+        conv = tf.reshape(linear, (-1, 128, 128, 32))
         out = tf.layers.conv2d_transpose(conv, 64,kernel_size=4,strides=2, padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
         out = tf.nn.relu(out)
@@ -34,11 +34,11 @@ def generator(z,reuse=False, keep_prob=keep_prob_value):
 
 def discriminator(x,reuse=False, keep_prob=keep_prob_value):
     with tf.variable_scope('discriminator',reuse=reuse):
-        out = tf.layers.conv2d(x, filters=32, kernel_size=[5, 5], padding='SAME')
+        out = tf.layers.conv2d(x, filters=32, kernel_size=[3, 3], padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
         out = tf.nn.relu(out)
         out = tf.layers.max_pooling2d(out, pool_size=[2, 2],padding='SAME', strides=2)
-        out = tf.layers.conv2d(out, filters=64, kernel_size=[5, 5], padding='SAME')
+        out = tf.layers.conv2d(out, filters=64, kernel_size=[3, 3], padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
         out = tf.nn.relu(out)
         out = tf.layers.max_pooling2d(out, pool_size=[2, 2],padding='SAME', strides=2)
@@ -118,7 +118,7 @@ def printtest():
 
 def train():
     filenames = tf.train.string_input_producer(
-        tf.train.match_filenames_once("D:/Development_Avecto/TensorFlow/resizedimages/*.png"))
+        tf.train.match_filenames_once("/home/ubuntu//images/*.png"))
     reader = tf.WholeFileReader()
     _, input = reader.read(filenames)
     #input = tf.Print(input,[input,tf.shape(input),"Input shape"])
@@ -133,11 +133,11 @@ def train():
         sess.run(init)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
-        train_writer = tf.summary.FileWriter('D:/Development_Avecto/TensorFlow/logs/1/train', sess.graph)
+        train_writer = tf.summary.FileWriter('/home/ubuntu/logs', sess.graph)
         tf.summary.image("Image", GeneratedImage)
         merge = tf.summary.merge_all()
 
-        for it in range(500):
+        for it in range(30000):
             _, X_batch =  sess.run([input,batch])
             summary,_ = sess.run([merge,D_optimizer], feed_dict={Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value})
             summary,_ = sess.run([merge,G_optimizer],feed_dict={ Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value})
