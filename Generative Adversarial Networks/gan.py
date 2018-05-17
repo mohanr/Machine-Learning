@@ -13,21 +13,25 @@ X = tf.placeholder(tf.float32, shape=[None, 299, 299, 1], name='X')
 Z = tf.placeholder(dtype=tf.float32,
                               shape=(None, 100),
                               name='Z')
+is_training = tf.placeholder(dtype=tf.bool,name='is_training')
+
 keep_prob = tf.placeholder(dtype=tf.float32, name='keep_prob')
 keep_prob_value = 0.6
 
 
-def generator(z,reuse=False, keep_prob=keep_prob_value):
+def generator(z,reuse=False, keep_prob=keep_prob_value,is_training=is_training):
     with tf.variable_scope('generator',reuse=reuse):
         linear = tf.layers.dense(z, 1024 * 16 * 16)
         conv = tf.reshape(linear, (-1, 128, 128, 32))
         out = tf.layers.conv2d_transpose(conv, 64,kernel_size=4,strides=2, padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
-        out = tf.nn.relu(out)
+        out = tf.contrib.layers.batch_norm(out, is_training=is_training)
+        out = tf.nn.leaky_relu(out)
         out = tf.layers.conv2d_transpose(out, 1,kernel_size=4,strides=2, padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
+        out = tf.contrib.layers.batch_norm(out, is_training=is_training)
         print( out.get_shape())
-        out = tf.nn.relu(out)
+        out = tf.nn.leaky_relu(out)
         tf.nn.tanh(out)
         return out
 
@@ -36,13 +40,13 @@ def discriminator(x,reuse=False, keep_prob=keep_prob_value):
     with tf.variable_scope('discriminator',reuse=reuse):
         out = tf.layers.conv2d(x, filters=32, kernel_size=[3, 3], padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
-        out = tf.nn.relu(out)
+        out = tf.nn.leaky_relu(out)
         out = tf.layers.max_pooling2d(out, pool_size=[2, 2],padding='SAME', strides=2)
         out = tf.layers.conv2d(out, filters=64, kernel_size=[3, 3], padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
-        out = tf.nn.relu(out)
+        out = tf.nn.leaky_relu(out)
         out = tf.layers.max_pooling2d(out, pool_size=[2, 2],padding='SAME', strides=2)
-        out = tf.layers.dense(out, units=256, activation=tf.nn.relu)
+        out = tf.layers.dense(out, units=256, activation=tf.nn.leaky_relu)
         out = tf.layers.dense(out, units=1, activation=tf.nn.sigmoid)
         return out
 
@@ -139,8 +143,8 @@ def train():
 
         for it in range(30000):
             _, X_batch =  sess.run([input,batch])
-            summary,_ = sess.run([merge,D_optimizer], feed_dict={Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value})
-            summary,_ = sess.run([merge,G_optimizer],feed_dict={ Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value})
+            summary,_ = sess.run([merge,D_optimizer], feed_dict={Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value, is_training:True})
+            summary,_ = sess.run([merge,G_optimizer],feed_dict={ Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value,is_training:True})
 
             train_writer.add_summary(summary, it)
             train_writer.flush()
