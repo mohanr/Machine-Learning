@@ -125,7 +125,7 @@ def printtest():
 
 def train():
     filenames = tf.train.string_input_producer(
-        tf.train.match_filenames_once("/home/ubuntu//images/*.png"))
+        tf.train.match_filenames_once("/home/ubuntu/images/*.png"))
     reader = tf.WholeFileReader()
     _, input = reader.read(filenames)
     #input = tf.Print(input,[input,tf.shape(input),"Input shape"])
