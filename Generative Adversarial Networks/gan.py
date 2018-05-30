@@ -21,8 +21,9 @@ keep_prob_value = 0.6
 
 def generator(z,reuse=False, keep_prob=keep_prob_value,is_training=is_training):
     with tf.variable_scope('generator',reuse=reuse):
-        linear = tf.layers.dense(z, 1024 * 16 * 16)
-        conv = tf.reshape(linear, (-1, 128, 128, 32))
+        linear = tf.layers.dense(z, 1024 * 8 * 8)
+        linear  = tf.contrib.layers.batch_norm(linear, is_training=is_training,decay=0.88)
+        conv = tf.reshape(linear, (-1, 128, 128, 8))
         out = tf.layers.conv2d_transpose(conv, 64,kernel_size=4,strides=2, padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
         out = tf.contrib.layers.batch_norm(out, is_training=is_training,decay=0.88)
@@ -125,7 +126,7 @@ def printtest():
 
 def train():
     filenames = tf.train.string_input_producer(
-        tf.train.match_filenames_once("/home/ubuntu//images/*.png"))
+        tf.train.match_filenames_once("/home/ubuntu/images/*.png"))
     reader = tf.WholeFileReader()
     _, input = reader.read(filenames)
     #input = tf.Print(input,[input,tf.shape(input),"Input shape"])
