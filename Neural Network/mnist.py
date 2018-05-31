@@ -57,7 +57,8 @@ def main():
 
     init = (tf.global_variables_initializer(), tf.local_variables_initializer())
     with tf.Session() as sess:
-        sess.run(init)
+        sess.run(
+            init)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
         train_writer = tf.summary.FileWriter('D:/Development_Avecto/TensorFlow/logs/1/train', sess.graph)
@@ -69,12 +70,10 @@ def main():
             num = num + 50
             minibatch(X_train, y_train, num)
             x_batch, y_batch =  minibatch(X_train, y_train_onehot,num)
-            x_batch_test, y_batch_test = minibatch(X_test, y_test_onehot, num)
 
             _, loss_train = sess.run([optimizer,cross_entropy], feed_dict={ X: x_batch,y: y_batch})
-            _, loss_test = sess.run([optimizer,cross_entropy], feed_dict={X: x_batch_test, y: y_batch_test})
-            #print("loss at iter %i:%.4f" % (it, loss_train/50))
-
+            _, loss_test = sess.run([optimizer,cross_entropy], feed_dict={X: X_test, y: y_test_onehot})
+            print ("Iterator " + str(it))
             trainlosses.append(loss_train)
             testlosses.append(loss_test)
 
