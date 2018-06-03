@@ -6,7 +6,7 @@ import ntpath
 
 
 # The part that discriminates
-X = tf.placeholder(tf.float32, shape=[None, 299, 299, 1], name='X')
+X = tf.placeholder(tf.float32, shape=[None, 256, 256, 3], name='X')
 
 
 # The part that generates
@@ -31,7 +31,7 @@ def generator(z,reuse=False, keep_prob=keep_prob_value,is_training=is_training):
         out = tf.layers.conv2d_transpose(out, 32,kernel_size=4,strides=2, padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
         out = tf.contrib.layers.batch_norm(out, is_training=is_training,decay=0.88)
-        out = tf.layers.conv2d_transpose(out, 1,kernel_size=4,strides=2, padding='SAME')
+        out = tf.layers.conv2d_transpose(out, 3,kernel_size=4,strides=2, padding='SAME')
         out = tf.layers.dropout(out, keep_prob)
         out = tf.contrib.layers.batch_norm(out, is_training=is_training,decay=0.88)
         print( out.get_shape())
@@ -92,7 +92,7 @@ def preprocess():
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
 
-        for i in range(50):
+        for i in range(10):
             file, document_tensor = sess.run([key, document])
             head,tail = ntpath.split(file)
             print(head)
@@ -126,26 +126,26 @@ def printtest():
 
 def train():
     filenames = tf.train.string_input_producer(
-        tf.train.match_filenames_once("/home/ubuntu/images/*.png"))
+        tf.train.match_filenames_once("/home/radhakrishnan/images/*.png"))
     reader = tf.WholeFileReader()
     _, input = reader.read(filenames)
     #input = tf.Print(input,[input,tf.shape(input),"Input shape"])
-    input = tf.image.decode_png(input, channels=1)
-    input.set_shape([299, 299, 1])
+    input = tf.image.decode_png(input, channels=3)
+    input.set_shape([256, 256, 3])
 
     batch = tf.train.batch([input],
-                           batch_size=20)
+                           batch_size=70)
 
     init = (tf.global_variables_initializer(), tf.local_variables_initializer())
     with tf.Session() as sess:
         sess.run(init)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
-        train_writer = tf.summary.FileWriter('/home/ubuntu/logs', sess.graph)
+        train_writer = tf.summary.FileWriter('/home/radhakrishnan/logs', sess.graph)
         tf.summary.image("Image", GeneratedImage)
         merge = tf.summary.merge_all()
 
-        for it in range(30000):
+        for it in range(1000):
             _, X_batch =  sess.run([input,batch])
             summary,_ = sess.run([merge,D_optimizer], feed_dict={Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value, is_training:True})
             summary,_ = sess.run([merge,G_optimizer],feed_dict={ Z : samplefromuniformdistribution(20,100), X: X_batch, keep_prob: keep_prob_value,is_training:True})
